@@ -1,3 +1,10 @@
 [build]
   publish = "."
   command = ""
+
+# SPA fallback: serve index.html (200) for every path so deep links like
+# /organizations resolve on direct load instead of hitting Netlify's 404.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
