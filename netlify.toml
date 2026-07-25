@@ -2,10 +2,13 @@
   publish = "."
   command = ""
 
+# Netlify Functions live here (the form-submission email relay).
 [functions]
   directory = "netlify/functions"
   node_bundler = "esbuild"
 
+# SPA fallback: serve index.html (200) for every path so deep links like
+# /organizations resolve on direct load instead of hitting Netlify's 404.
 [[redirects]]
   from = "/*"
   to = "/index.html"
