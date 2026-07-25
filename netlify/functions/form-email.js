@@ -1,8 +1,13 @@
 // enStill — form-submission email relay
 // Receives Netlify's "outgoing webhook" for form submissions and sends:
 //   1) an internal notification to hello@enstill.life with a per-form subject line
-//   2) for athlete-support only: a confirmation email to the submitter with the
-//      enStill Athlete Support Overview PDF attached
+//      (all four forms)
+//   2) Organizations only: a confirmation email to the submitter with the
+//      corporate one-pager + buyer/procurement FAQ attached
+//
+// Athlete Support: no submitter confirmation email / attachment is sent here.
+// The overview PDF is sent manually by Blokk after personally reviewing the
+// inquiry and confirming fit — that send stays human-initiated, not automated.
 const crypto = require('crypto');
 
 const SUBJECTS = {
@@ -15,9 +20,19 @@ const SUBJECTS = {
 const TO = 'hello@enstill.life';
 const FROM = process.env.NOTIFY_FROM || 'enStill forms <forms@enstill.life>';
 const CONFIRM_FROM = process.env.CONFIRM_FROM || 'enStill <hello@enstill.life>';
-const ATHLETE_OVERVIEW_URL =
-  process.env.ATHLETE_OVERVIEW_URL ||
-  'https://enstill.netlify.app/assets/enStill_Athlete_Support_Overview.pdf';
+
+const ORG_ATTACHMENT_BASE =
+  process.env.ORG_ATTACHMENT_BASE_URL || 'https://enstill.netlify.app/assets';
+const ORG_ATTACHMENTS = [
+  { filename: 'enStill_Steadiness_at_Work_One-Pager.docx', path: `${ORG_ATTACHMENT_BASE}/enStill_Steadiness_at_Work_One-Pager_1.docx` },
+  { filename: 'enStill_Buyer_Procurement_FAQ.docx',        path: `${ORG_ATTACHMENT_BASE}/enStill_Buyer_Procurement_FAQ_2.docx` },
+];
+
+const ORG_CONFIRMATION_TEXT =
+  "Thank you. Your request has been received. The corporate overview will be sent " +
+  "to the email provided, along with a note on how to schedule a scoping " +
+  "conversation for your setting.\n\n" +
+  '— enStill · enstill.life · hello@enstill.life';
 
 function verifySignature(token, secret, rawBody) {
   if (!token || !secret) return false;
@@ -113,25 +128,21 @@ exports.handler = async (event) => {
       ...(submitterEmail ? { reply_to: submitterEmail } : {}),
     });
 
-    // 2) Athlete Support only — confirmation to the submitter with the overview attached
-    if (formName === 'athlete-support' && submitterEmail) {
+    // 2) Organizations only — auto-send the one-pager + FAQ to the submitter
+    if (formName === 'organizations' && submitterEmail) {
       await sendViaResend({
         from: CONFIRM_FROM,
         to: [submitterEmail],
-        subject: SUBJECTS['athlete-support'],
-        text:
-          "Thank you. Your request has been received. You'll receive the overview " +
-          'along with a note to arrange a brief, discreet conversation.\n\n' +
-          'The enStill Athlete Support overview is attached.\n\n' +
-          '— enStill · enstill.life · hello@enstill.life',
-        attachments: [
-          {
-            filename: 'enStill_Athlete_Support_Overview.pdf',
-            path: ATHLETE_OVERVIEW_URL,
-          },
-        ],
+        subject: SUBJECTS['organizations'],
+        text: ORG_CONFIRMATION_TEXT,
+        attachments: ORG_ATTACHMENTS,
       });
     }
+
+    // Athlete Support: no submitter confirmation email is sent here.
+    // The on-page confirmation already covers the immediate response, and the
+    // overview PDF is sent manually by Blokk after reviewing fit — intentionally
+    // not automated.
   } catch (err) {
     console.error('form-email send failed:', err.message);
     return { statusCode: 500, body: 'Email send failed' };
