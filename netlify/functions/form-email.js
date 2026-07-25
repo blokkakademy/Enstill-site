@@ -2,12 +2,12 @@
 // Receives Netlify's "outgoing webhook" for form submissions and sends:
 //   1) an internal notification to hello@enstill.life with a per-form subject line
 //      (all four forms)
-//   2) Organizations only: a confirmation email to the submitter with the
+//   2) Organizations: a confirmation email to the submitter with the
 //      corporate one-pager + buyer/procurement FAQ attached
-//
-// Athlete Support: no submitter confirmation email / attachment is sent here.
-// The overview PDF is sent manually by Blokk after personally reviewing the
-// inquiry and confirming fit — that send stays human-initiated, not automated.
+//   3) Athlete Support: a text-only confirmation email to the submitter —
+//      no attachment, no overview promise. The overview PDF is sent manually
+//      by Blokk after personally reviewing the inquiry and confirming fit —
+//      that send stays human-initiated, not automated.
 const crypto = require('crypto');
 
 const SUBJECTS = {
@@ -32,6 +32,12 @@ const ORG_CONFIRMATION_TEXT =
   "Thank you. Your request has been received. The corporate overview will be sent " +
   "to the email provided, along with a note on how to schedule a scoping " +
   "conversation for your setting.\n\n" +
+  '— enStill · enstill.life · hello@enstill.life';
+
+const ATHLETE_CONFIRMATION_TEXT =
+  "Thank you.\n\n" +
+  "Your request has been received. If there appears to be a fit, the next step " +
+  "is a brief, discreet conversation to clarify context and the right next step.\n\n" +
   '— enStill · enstill.life · hello@enstill.life';
 
 function verifySignature(token, secret, rawBody) {
@@ -139,10 +145,17 @@ exports.handler = async (event) => {
       });
     }
 
-    // Athlete Support: no submitter confirmation email is sent here.
-    // The on-page confirmation already covers the immediate response, and the
-    // overview PDF is sent manually by Blokk after reviewing fit — intentionally
-    // not automated.
+    // 3) Athlete Support — text-only confirmation to the submitter, no attachment.
+    // The overview PDF is sent manually by Blokk after reviewing fit — that send
+    // stays human-initiated, not automated.
+    if (formName === 'athlete-support' && submitterEmail) {
+      await sendViaResend({
+        from: CONFIRM_FROM,
+        to: [submitterEmail],
+        subject: SUBJECTS['athlete-support'],
+        text: ATHLETE_CONFIRMATION_TEXT,
+      });
+    }
   } catch (err) {
     console.error('form-email send failed:', err.message);
     return { statusCode: 500, body: 'Email send failed' };
