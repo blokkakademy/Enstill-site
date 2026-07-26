@@ -29,9 +29,11 @@ const ORG_ATTACHMENTS = [
 ];
 
 const ORG_CONFIRMATION_TEXT =
-  "Thank you. Your request has been received. The corporate overview will be sent " +
-  "to the email provided, along with a note on how to schedule a scoping " +
-  "conversation for your setting.\n\n" +
+  "Thank you for your interest in enStill's Corporate Workforce practice.\n\n" +
+  "Attached are the two documents you requested: the Steadiness at Work overview " +
+  "and the Buyer & Procurement FAQ.\n\n" +
+  "If it looks like a fit, the next step is a brief scoping conversation about " +
+  "your setting — just reply to this email at your convenience.\n\n" +
   '— enStill · enstill.life · hello@enstill.life';
 
 const ATHLETE_CONFIRMATION_TEXT =
